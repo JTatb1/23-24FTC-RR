@@ -30,13 +30,16 @@ public class MechaDrive extends LinearOpMode {
         double Speedcntrl = .3;
         double Gripper = 1;
         double Tilter = 0;
-        int SLiftPos;
+        double LaunchPos = 0;
 
+        int SLiftPos;
+        double SLiftPow = 0;
         double maximum = 6089;
         double minimum = 0;
+        double ArmSetter = 500;
+        double ArmSetterSetter = 0;
 
         robot.SLift.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-
         robot.SLift.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
         waitForStart();
@@ -44,22 +47,15 @@ public class MechaDrive extends LinearOpMode {
 
         while (opModeIsActive()) {
 
-            ////////SpeedControl///////
+            /* //////SpeedControl/////// */
             if (gamepad1.dpad_left) {
                 Speedcntrl -= .1;
                 sleep(100);
             }
-
             if (gamepad1.dpad_right) {
                 Speedcntrl += .1;
                 sleep(100);
-            }
-
-            if (gamepad1.dpad_down) {
-                Speedcntrl = .3;
-            }
-
-            Speedcntrl = Range.clip(Speedcntrl, .2, .5);
+            } Speedcntrl = Range.clip(Speedcntrl, .2, .5);
 
 
             /*---------------------------Drive Control ---------------------------*/
@@ -89,60 +85,78 @@ public class MechaDrive extends LinearOpMode {
             ////////MotorControl////////
 
             robot.STilt.setPower(gamepad2.left_stick_x);
+            SLiftPos = -robot.SLift.getCurrentPosition();
 
-           if(gamepad2.left_stick_y < 0 && -robot.SLift.getCurrentPosition() < maximum) {
 
-                robot.SLift.setPower(gamepad2.left_stick_y);
-
+            if (ArmSetterSetter == 0) {
+                if (gamepad2.left_stick_y < 0 && SLiftPos < maximum) {
+                    robot.SLift.setPower(gamepad2.left_stick_y);
+                } else if (gamepad2.left_stick_y > 0 && SLiftPos > minimum) {
+                    robot.SLift.setPower(gamepad2.left_stick_y);
+                } else {
+                    robot.SLift.setPower(0);
+                }
             }
 
-            else if(gamepad2.left_stick_y > 0 && -robot.SLift.getCurrentPosition() > minimum) {
 
-                robot.SLift.setPower(gamepad2.left_stick_y);
 
+            if (gamepad2.dpad_down){
+                ArmSetterSetter = 1;
+            }
+            if (gamepad2.dpad_up){
+                ArmSetterSetter = 0;
             }
 
-            else {
 
-                robot.SLift.setPower(0);
+            if (ArmSetterSetter == 1){
+                SLiftPow = .2;
 
+                if (SLiftPos > ArmSetter){
+                    SLiftPow += .01;
+
+                }
+                if (SLiftPos < ArmSetter) {
+                    SLiftPow -= .01;
+                }
+                
             }
+            robot.SLift.setPower(SLiftPow);
+
+
 
             ///////ServoControl///////
 
-            if (gamepad2.a) { //clo+ses claw
+            if (gamepad2.a) { //closes claw
                 Gripper = 1;
             }
-            if (gamepad2.x) { //opens claw+
+            if (gamepad2.b) { //opens claw
                 Gripper = 0;
-            }
-            robot.Grabber.setPosition(Gripper);
+            }   robot.Grabber.setPosition(Gripper);
 
 
-            if (gamepad2.right_stick_x > 0) { //up's claw
+            if (gamepad2.right_stick_y > 0) { //Raises claw
                 Tilter += .01;
             }
-            if (gamepad2.x) { //opens claw+
+            if (gamepad2.right_stick_y < 0) { //Lowers claw
                 Tilter -= .01;
+            }   robot.GrabTilt.setPosition(Tilter);
+
+
+            if (gamepad2.right_bumper) { //Launch Plane
+                LaunchPos = 1;
             }
-            robot.GrabTilt.setPosition(Tilter);
-
-            if (gamepad2.right_bumper) { //closes claw
-                robot.Launcher.setPosition(1);
-            }
-            if (gamepad2.left_bumper) { //opens claw+
-                robot.Launcher.setPosition(0);
-            }
+            if (gamepad2.left_bumper) { //Arm Launcher
+                LaunchPos = 0;
+            }robot.Launcher.setPosition(LaunchPos);
 
 
 
-            // Send telemetry message to signify robot running;
-            telemetry.addData("Status", "Run Time: " + runtime);
+            /* Send telemetry messages */
             telemetry.addData("Speed Control Set To:", "(%.2f)", Speedcntrl);
-            telemetry.addData("DriveMotors", "FL(%.2f), FR(%.2f)", FLdub, FRdub);
-            telemetry.addData("DriveMotors", "RL(%.2f), RR(%.2f)", RLdub, RRdub);
-            telemetry.addData("Starting at",  "%7d", -robot.SLift.getCurrentPosition());
-            telemetry.addData("Servos", "Gripper(%.2f)", Gripper);
+            telemetry.addData("Arm At",  "%7d", SLiftPos);
+            telemetry.addData("Servos", "Gripper(%.2f), Tilt(%.2f), Launch(%.2f)", Gripper, Tilter, LaunchPos);
+            telemetry.addData("FrontDriveMotors", "FL(%.2f), FR(%.2f)", FLdub, FRdub);
+            telemetry.addData("RearDriveMotors", "RL(%.2f), RR(%.2f)", RLdub, RRdub);
             telemetry.update();
         }
     }
