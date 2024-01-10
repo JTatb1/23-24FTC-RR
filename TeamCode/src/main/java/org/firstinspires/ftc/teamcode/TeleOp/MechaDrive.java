@@ -34,10 +34,11 @@ public class MechaDrive extends LinearOpMode {
 
         int SLiftPos;
         double SLiftPow = 0;
-        double maximum = 6089;
+        double maximum = 5000;
         double minimum = 0;
-        double ArmSetter = 500;
+        double ArmSetter = 100;
         double ArmSetterSetter = 0;
+        double T = 0;
 
         robot.SLift.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         robot.SLift.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
@@ -88,37 +89,36 @@ public class MechaDrive extends LinearOpMode {
             SLiftPos = -robot.SLift.getCurrentPosition();
 
 
-            if (ArmSetterSetter == 0) {
-                if (gamepad2.left_stick_y < 0 && SLiftPos < maximum) {
-                    robot.SLift.setPower(gamepad2.left_stick_y);
-                } else if (gamepad2.left_stick_y > 0 && SLiftPos > minimum) {
-                    robot.SLift.setPower(gamepad2.left_stick_y);
-                } else {
-                    robot.SLift.setPower(0);
-                }
-            }
-
-
 
             if (gamepad2.dpad_down){
                 ArmSetterSetter = 1;
+                SLiftPow = .2;
             }
             if (gamepad2.dpad_up){
                 ArmSetterSetter = 0;
+                SLiftPow = 0;
             }
 
 
             if (ArmSetterSetter == 1){
-                SLiftPow = .2;
 
-                if (SLiftPos > ArmSetter){
+                if (SLiftPos > ArmSetter) {
                     SLiftPow += .01;
-
                 }
                 if (SLiftPos < ArmSetter) {
                     SLiftPow -= .01;
                 }
-                
+            }
+            SLiftPow = Range.clip(SLiftPow,-.1,.3);
+
+            if (ArmSetterSetter == 0) {
+                if (gamepad2.left_stick_y < 0 && SLiftPos < maximum) {
+                    SLiftPow = gamepad2.left_stick_y;
+                } else if (gamepad2.left_stick_y > 0 && SLiftPos > minimum) {
+                    SLiftPow = gamepad2.left_stick_y;
+                } else {
+                    SLiftPow = 0;
+                }
             }
             robot.SLift.setPower(SLiftPow);
 
@@ -130,16 +130,17 @@ public class MechaDrive extends LinearOpMode {
                 Gripper = 1;
             }
             if (gamepad2.b) { //opens claw
-                Gripper = 0;
-            }   robot.Grabber.setPosition(Gripper);
+                Gripper = .5;
+            }robot.Grabber.setPosition(Gripper);
 
 
             if (gamepad2.right_stick_y > 0) { //Raises claw
-                Tilter += .01;
+                Tilter -= .005;
             }
             if (gamepad2.right_stick_y < 0) { //Lowers claw
-                Tilter -= .01;
-            }   robot.GrabTilt.setPosition(Tilter);
+                Tilter += .005;
+            }   Tilter = Range.clip(Tilter, .65, 1);
+            robot.GrabTilt.setPosition(Tilter);
 
 
             if (gamepad2.right_bumper) { //Launch Plane
